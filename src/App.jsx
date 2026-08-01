@@ -11,6 +11,7 @@ import { db } from './firebase/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import './index.css';
 import Loader from './components/Loader';
+import DownloadSwitch from './components/DownloadSwitch';
 
 function App() {
   const { currentUser, loginWithGoogle, loginWithPhone, logout } = useAuth();
@@ -200,10 +201,7 @@ function App() {
                   {copied ? <FiCheck /> : <FiCopy />}
                   {copied ? 'Copied!' : 'Copy Notes'}
                 </button>
-                <button className="action-btn" onClick={downloadPDF}>
-                  <FiDownload />
-                  Download PDF
-                </button>
+                <DownloadSwitch onDownload={downloadPDF} />
                 <button className="action-btn" onClick={() => setShowQuestionsPage(true)}>
                   <FiHelpCircle />
                   Questions
