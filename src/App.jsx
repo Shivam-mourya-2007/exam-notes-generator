@@ -10,6 +10,7 @@ import QuestionsPage from './pages/QuestionsPage';
 import { db } from './firebase/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import './index.css';
+import Loader from './components/Loader';
 
 function App() {
   const { currentUser, loginWithGoogle, loginWithPhone, logout } = useAuth();
@@ -187,7 +188,7 @@ function App() {
 
           {loading && (
             <div className="loading-container">
-              <span className="loader"></span>
+              <Loader />
               <div className="loading-text">Analyzing your document and crafting notes...</div>
             </div>
           )}
