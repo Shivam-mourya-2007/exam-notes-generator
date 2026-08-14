@@ -4,6 +4,7 @@ const multer = require('multer');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config();
 const { db, storage, FieldValue } = require('./firebaseAdmin');
+const questionsRoute = require('./routes/questions.route');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -11,6 +12,7 @@ const port = process.env.PORT || 5000;
 const allowedOrigins = process.env.CLIENT_URL || 'http://localhost:5173';
 app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
+app.use('/api', questionsRoute);
 
 // Set up Multer for handling file uploads (in memory)
 const upload = multer({ 
@@ -260,6 +262,12 @@ app.delete('/api/history/:id', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+// Keep the local development entry point while allowing Vercel to import the
+// Express app as a serverless function.
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}
+
+module.exports = app;
