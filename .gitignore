@@ -3,3 +3,6 @@ dist/
 .env
 uploads/
 firebase-service-account*.json
+
+.vercel
+.env*
