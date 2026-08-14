@@ -4,7 +4,8 @@ import {
   signInWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
-  signInWithPopup
+  signInWithPopup,
+  signInWithRedirect
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase/firebase';
 
@@ -29,6 +30,12 @@ export const AuthProvider = ({ children }) => {
     return signInWithPopup(auth, googleProvider);
   };
 
+  // Used only when the browser blocks a popup. Firebase completes this flow
+  // in the current tab and restores the user through onAuthStateChanged.
+  const loginWithGoogleRedirect = () => {
+    return signInWithRedirect(auth, googleProvider);
+  };
+
   // Logout
   const logout = () => {
     return signOut(auth);
@@ -50,6 +57,7 @@ export const AuthProvider = ({ children }) => {
     signup,
     login,
     loginWithGoogle,
+    loginWithGoogleRedirect,
     logout
   };
 

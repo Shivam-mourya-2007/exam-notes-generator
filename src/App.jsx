@@ -14,7 +14,7 @@ import Loader from './components/Loader';
 import DownloadSwitch from './components/DownloadSwitch';
 
 function App() {
-  const { currentUser, loginWithGoogle, loginWithPhone, logout } = useAuth();
+  const { currentUser, loginWithGoogle, loginWithGoogleRedirect, loginWithPhone, logout } = useAuth();
   const [showHistory, setShowHistory] = useState(false);
   const [showQuestionsPage, setShowQuestionsPage] = useState(false);
   const [file, setFile] = useState(null);
@@ -133,7 +133,13 @@ function App() {
       if (authFailure.code === 'auth/unauthorized-domain') {
         setAuthError('Google sign-in is not configured for this site yet. Please try again shortly.');
       } else if (authFailure.code === 'auth/popup-blocked') {
-        setAuthError('Your browser blocked the sign-in popup. Please allow popups and try again.');
+        setAuthError('Your browser blocked the popup. Continuing with secure sign-in…');
+        try {
+          await loginWithGoogleRedirect();
+        } catch (redirectFailure) {
+          console.error('Google redirect sign-in failed:', redirectFailure.code || redirectFailure.message);
+          setAuthError('Google sign-in could not be started. Please try again.');
+        }
       } else if (authFailure.code !== 'auth/popup-closed-by-user') {
         setAuthError('Google sign-in could not be completed. Please try again.');
       }
