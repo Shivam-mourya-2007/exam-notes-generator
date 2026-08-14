@@ -21,6 +21,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
+  const [authError, setAuthError] = useState('');
   const [copied, setCopied] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef(null);
@@ -119,11 +120,32 @@ function App() {
     html2pdf().set(opt).from(element).save();
   };
 
+  const handleGoogleSignIn = async () => {
+    setAuthError('');
+
+    try {
+      await loginWithGoogle();
+    } catch (authFailure) {
+      // Firebase error codes are safe diagnostic information and do not
+      // contain credentials, tokens, or user data.
+      console.error('Google sign-in failed:', authFailure.code || authFailure.message);
+
+      if (authFailure.code === 'auth/unauthorized-domain') {
+        setAuthError('Google sign-in is not configured for this site yet. Please try again shortly.');
+      } else if (authFailure.code === 'auth/popup-blocked') {
+        setAuthError('Your browser blocked the sign-in popup. Please allow popups and try again.');
+      } else if (authFailure.code !== 'auth/popup-closed-by-user') {
+        setAuthError('Google sign-in could not be completed. Please try again.');
+      }
+    }
+  };
+
   if (!currentUser) {
     return (
       <LandingPage
-        loginWithGoogle={loginWithGoogle}
+        loginWithGoogle={handleGoogleSignIn}
         loginWithPhone={loginWithPhone || (() => alert('Phone login coming soon'))}
+        authError={authError}
       />
     );
   }

@@ -1,7 +1,7 @@
 import React from 'react';
 import './LandingPage.css';
 
-const LandingPage = ({ loginWithGoogle, loginWithPhone }) => {
+const LandingPage = ({ loginWithGoogle, loginWithPhone, authError }) => {
   return (
     <div className="landing-page">
       <header className="landing-header">
@@ -16,6 +16,7 @@ const LandingPage = ({ loginWithGoogle, loginWithPhone }) => {
             <button className="btn-primary" onClick={loginWithGoogle}>Sign in with Google</button>
             <button className="btn-secondary" onClick={loginWithPhone}>Continue with Phone</button>
           </div>
+          {authError && <p className="error-message" role="alert">{authError}</p>}
         </section>
 
         <section className="features">
