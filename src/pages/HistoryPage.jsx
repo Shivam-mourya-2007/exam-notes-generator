@@ -1,51 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
-import { db } from '../firebase/firebase';
-import { useAuth } from '../hooks/useAuth';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import axios from 'axios';
 import { FiTrash2 } from 'react-icons/fi';
+import { deleteNoteHistory, getNoteHistory } from '../utils/noteHistory';
 import './HistoryPage.css';
 
 const HistoryPage = ({ onBack }) => {
-  const { currentUser } = useAuth();
-  const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState(() => getNoteHistory());
+  const [loading] = useState(false);
   const [selectedNote, setSelectedNote] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
-  useEffect(() => {
-    const fetchHistory = async () => {
-      if (!currentUser) return;
-      try {
-        const q = query(
-          collection(db, 'notes'),
-          where('uid', '==', currentUser.uid),
-          orderBy('createdAt', 'desc')
-        );
-        const querySnapshot = await getDocs(q);
-        const notes = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          // Convert timestamp to Date object for easier formatting, handle null if pending
-          createdAt: doc.data().createdAt ? doc.data().createdAt.toDate() : new Date() 
-        }));
-        setHistory(notes);
-      } catch (error) {
-        console.error("Error fetching history:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchHistory();
-  }, [currentUser]);
-
   const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', {
+    return new Date(date).toLocaleDateString('en-US', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -68,9 +37,7 @@ const HistoryPage = ({ onBack }) => {
     if (!noteToDelete) return;
     setIsDeleting(true);
     try {
-      await axios.delete(`/api/history/${noteToDelete.id}`);
-      
-      // Remove from local state
+      deleteNoteHistory(noteToDelete.id);
       setHistory(prev => prev.filter(note => note.id !== noteToDelete.id));
       
       setToastMessage({ type: 'success', text: 'Summary deleted successfully.' });

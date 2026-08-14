@@ -3,7 +3,6 @@ const cors = require('cors');
 const multer = require('multer');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config();
-const { db, storage, FieldValue } = require('./firebaseAdmin');
 const questionsRoute = require('./routes/questions.route');
 
 const app = express();
@@ -139,126 +138,11 @@ app.post('/api/generate-notes', upload.single('pdf'), async (req, res) => {
     const result = await model.generateContent([prompt, pdfPart]);
     const notes = result.response.text();
 
-    let storagePath = '';
-    let downloadURL = '';
-    
-    // Upload PDF to Firebase Storage
-    if (req.body.uid && db && storage) {
-      try {
-        const timestamp = Date.now();
-        const safeName = req.file.originalname ? req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_') : 'document.pdf';
-        storagePath = `users/${req.body.uid}/pdfs/${timestamp}_${safeName}`;
-        
-        const fileRef = storage.bucket().file(storagePath);
-        await fileRef.save(req.file.buffer, {
-          metadata: {
-            contentType: 'application/pdf',
-            metadata: {
-              originalName: req.file.originalname,
-              uid: req.body.uid
-            }
-          }
-        });
-        
-        // Make the file publicly accessible to get a download URL (optional, depends on security rules)
-        // For now, we'll just store the path. We can get a signed URL if needed later.
-        downloadURL = `https://firebasestorage.googleapis.com/v0/b/${storage.bucket().name}/o/${encodeURIComponent(storagePath)}?alt=media`;
-        
-        // Save to Firestore
-        await db.collection('notes').add({
-          uid: req.body.uid,
-          fileName: req.file.originalname || 'document.pdf',
-          notes: notes,
-          createdAt: FieldValue.serverTimestamp(),
-          storagePath: storagePath,
-          downloadURL: downloadURL
-        });
-      } catch (uploadError) {
-        console.error("Error during Storage/Firestore operation:", uploadError);
-        // Even if upload fails, we still return notes so user isn't completely blocked
-      }
-    }
-
     res.json({ notes });
 
   } catch (error) {
     console.error('Error generating notes:', error);
     res.status(500).json({ error: `An error occurred: ${error.message}` });
-  }
-});
-
-// Delete Summary Route
-app.delete('/api/history/:id', async (req, res) => {
-  console.log(`[DELETE] Received request to delete summary. Route: /api/history/${req.params.id}`);
-  
-  if (!db || !storage) {
-    console.error('[DELETE] Firebase Admin is not initialized (missing credentials).');
-    return res.status(500).json({ error: 'Server misconfiguration: Missing Firebase Service Account credentials.' });
-  }
-
-  try {
-    const { id } = req.params;
-    if (!id) {
-      console.error('[DELETE] Missing summary ID.');
-      return res.status(400).json({ error: 'Missing summary ID.' });
-    }
-
-    console.log(`[DELETE] Attempting to find summary document with ID: ${id}`);
-    const summaryRef = db.collection('notes').doc(id);
-    const summaryDoc = await summaryRef.get();
-
-    if (!summaryDoc.exists) {
-      console.error(`[DELETE] Summary document not found in Firestore for ID: ${id}`);
-      return res.status(404).json({ error: 'Summary not found.' });
-    }
-
-    const data = summaryDoc.data();
-    const storagePath = data.storagePath;
-    const uid = data.uid;
-
-    console.log(`[DELETE] Document found.`);
-    console.log(`[DELETE] -> document id: ${id}`);
-    console.log(`[DELETE] -> uid: ${uid}`);
-    console.log(`[DELETE] -> storagePath: ${storagePath}`);
-
-    // 1. Delete from Firebase Storage first
-    if (storagePath) {
-      try {
-        console.log(`[DELETE] Attempting to delete file from Firebase Storage: ${storagePath}`);
-        const fileRef = storage.bucket().file(storagePath);
-        await fileRef.delete();
-        console.log(`[DELETE] Firebase Storage delete result: SUCCESS`);
-      } catch (storageError) {
-        // If file doesn't exist (e.g., 404), we might still want to delete the db record.
-        // But the prompt says: "If Storage deletion fails, DO NOT delete the database document."
-        console.error(`[DELETE] Firebase Storage delete result: FAILED`);
-        console.error(`[DELETE] Exact Firebase Storage error:`, storageError);
-        
-        if (storageError.code !== 404) {
-          return res.status(500).json({ error: 'Failed to delete file from storage. Database record intact.', details: storageError.message });
-        } else {
-          console.warn(`[DELETE] File not found in storage (404), proceeding to delete database record anyway...`);
-        }
-      }
-    } else {
-      console.warn(`[DELETE] No storagePath found for this document. Skipping Storage deletion.`);
-    }
-
-    // 2. Delete from Firestore
-    try {
-      console.log(`[DELETE] Attempting to delete document from Firestore: ${id}`);
-      await summaryRef.delete();
-      console.log(`[DELETE] Firestore delete result: SUCCESS`);
-      res.status(200).json({ message: 'Summary deleted successfully.' });
-    } catch (firestoreError) {
-      console.error(`[DELETE] Firestore delete result: FAILED`);
-      console.error(`[DELETE] Exact Firestore error:`, firestoreError);
-      res.status(500).json({ error: 'Failed to delete database record.', details: firestoreError.message });
-    }
-
-  } catch (error) {
-    console.error('[DELETE] Unhandled error during deletion:', error);
-    res.status(500).json({ error: `An error occurred while deleting: ${error.message}` });
   }
 });
 
