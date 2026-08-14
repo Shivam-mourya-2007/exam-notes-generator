@@ -154,9 +154,9 @@ function App() {
       {showHistory ? (
         <HistoryPage onBack={() => setShowHistory(false)} />
       ) : showQuestionsPage ? (
-        <QuestionsPage 
-          file={file} 
-          onBack={() => setShowQuestionsPage(false)} 
+        <QuestionsPage
+          file={file}
+          onBack={() => setShowQuestionsPage(false)}
           questions={questions}
           setQuestions={setQuestions}
           questionsFileRef={questionsFileRef}
@@ -206,9 +206,9 @@ function App() {
                   <FiHelpCircle />
                   Questions
                 </button>
-                <button className="action-btn" onClick={() => { 
-                  setNotes(''); 
-                  setFile(null); 
+                <button className="action-btn" onClick={() => {
+                  setNotes('');
+                  setFile(null);
                   setQuestions('');
                   questionsFileRef.current = null;
                 }}>
