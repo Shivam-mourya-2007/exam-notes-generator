@@ -1,9 +1,12 @@
-const pdfParse = require('pdf-parse');
+const { PDFParse } = require('pdf-parse');
 const { chunkText } = require('../utils/textChunker');
 
 async function extractPdfText(pdfBuffer) {
+  let parser;
+
   try {
-    const data = await pdfParse(pdfBuffer);
+    parser = new PDFParse({ data: pdfBuffer });
+    const data = await parser.getText();
     
     // Clean extra whitespace and line breaks
     const cleanedText = data.text
@@ -20,6 +23,10 @@ async function extractPdfText(pdfBuffer) {
     return chunks;
   } catch (error) {
     throw new Error(`[Stage 1 Failed] Error extracting PDF text: ${error.message}`);
+  } finally {
+    if (parser) {
+      await parser.destroy();
+    }
   }
 }
 

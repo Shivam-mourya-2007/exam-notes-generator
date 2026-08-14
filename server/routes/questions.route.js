@@ -1,6 +1,5 @@
 const express = require('express');
 const multer = require('multer');
-const { extractPdfText } = require('../services/pdfExtractor');
 const { extractTopics } = require('../services/topicExtractor');
 const { buildBlueprint } = require('../services/blueprintBuilder');
 const { generateQuestions } = require('../services/questionGenerator');
@@ -26,6 +25,9 @@ router.post('/generate-questions', upload.single('pdf'), async (req, res) => {
     }
 
     // Stage 1
+    // Load the PDF parser only when this route is requested. This keeps the
+    // independent notes-generation API available during a parser failure.
+    const { extractPdfText } = require('../services/pdfExtractor');
     const chunks = await extractPdfText(req.file.buffer);
     
     // Stage 2
